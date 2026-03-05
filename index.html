@@ -1,0 +1,341 @@
+<!DOCTYPE html><html lang="es"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2502/2502160.png">
+    
+    <title>Analizador PRO v27.0 - Trading Groups</title>
+    <style>
+        :root {
+            --bg-main: #0f172a; --bg-panel: #1e293b; --accent: #2563eb;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --text: #f1f5f9;
+            --global-accent: #00ffcc;
+        }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg-main); color: var(--text); padding: 12px; overscroll-behavior: none; }
+        
+        #bloqueo-audio { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; }
+        .msg-audio { background: var(--accent); color: white; padding: 25px; border-radius: 20px; font-weight: bold; text-align: center; box-shadow: 0 4px 25px rgba(0,0,0,0.5); border: 2px solid white; cursor: pointer; }
+
+        .search-box { display: flex; background: #1e293b; border: 1px solid #334155; border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .search-label { font-size: 9px; padding: 12px 8px; font-weight: bold; background: rgba(0,0,0,0.2); min-width: 50px; text-align: center; }
+        .search-box input { border: none; background: transparent; color: white; padding: 10px; flex: 1; font-size: 15px; outline: none; }
+        .search-box button { width: 65px; border: none; cursor: pointer; color: white; font-weight: bold; }
+
+        .fav-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
+        .fav-item { background: rgba(37, 99, 235, 0.1); color: white; border-radius: 8px; font-size: 12px; font-weight: bold; border: 1px solid #334155; display: flex; align-items: center; overflow: hidden; }
+        .fav-text { padding: 8px 10px; cursor: pointer; }
+        .fav-del { background: rgba(239, 68, 68, 0.2); padding: 8px 10px; cursor: pointer; color: var(--danger); font-weight: 900; border-left: 1px solid #334155; }
+        
+        .signal-buy { border-color: var(--success) !important; background: rgba(16, 185, 129, 0.2) !important; }
+        .signal-sell { border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.2) !important; }
+
+        .foco-activo { background: linear-gradient(to right, #1e293b, #0f172a); border: 2px solid var(--global-accent); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 15px; position: relative; }
+        .foco-nombre { font-size: 28px; font-weight: 900; color: var(--global-accent); display: block; }
+        .foco-precio { font-size: 22px; font-family: monospace; color: white; font-weight: bold; }
+        .live-dot { position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; background: var(--success); border-radius: 50%; animation: blink 1s infinite; }
+
+        .prob-container { margin: 10px auto; width: 80%; background: #0f172a; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #334155; }
+        .prob-bar { height: 100%; width: 0%; background: var(--global-accent); transition: width 0.6s; box-shadow: 0 0 10px var(--global-accent); }
+
+        .advice-box { padding: 18px; border-radius: 10px; font-weight: 900; text-align: center; margin-bottom: 12px; text-transform: uppercase; font-size: 20px; }
+        .bg-espera { background: #1e293b; color: #94a3b8; }
+        .bg-largo { background: var(--success); color: #064e3b; }
+        .bg-corto { background: var(--danger); color: white; }
+
+        .card { background: var(--bg-panel); border-radius: 12px; padding: 12px; margin-bottom: 12px; border: 1px solid #334155; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table td { padding: 8px 5px; border-bottom: 1px solid #334155; font-size: 14px; }
+        .val { text-align: right; font-weight: bold; font-family: monospace; }
+
+        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+        .config-label { font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+        input, select, .btn-update { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 14px; box-sizing: border-box; }
+        optgroup { background: #1e293b; color: var(--global-accent); font-weight: bold; font-style: normal; }
+        option { background: #0f172a; color: white; }
+
+        .btn-update { background: var(--accent); border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #veredicto-acierto { text-align: center; padding: 12px; border-radius: 8px; font-weight: 900; font-size: 18px; background: rgba(0,0,0,0.3); margin-top: 5px; }
+        .niveles-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; }
+        
+        .auto-container { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style></head><body onclick="desbloquearApp()">
+
+    <div id="bloqueo-audio"><div class="msg-audio">🚀 INICIAR CONSOLA v27.0</div></div>
+
+    <div class="search-box">
+        <span class="search-label" style="color:var(--success)">BUSCAR</span>
+        <input type="text" id="searchCripto" placeholder="Ej: BTC, ETH, ORO...">
+        <button onclick="cambiarActivo()" style="background:var(--success)">IR</button>
+    </div>
+
+    <div id="lista-favs" class="fav-list"></div>
+
+    <div id="consejo" class="advice-box bg-espera">MODO RADAR</div>
+    
+    <div class="foco-activo">
+        <div id="dot" class="live-dot" style="display:none"></div>
+        <span class="foco-nombre" id="display-nombre">---</span>
+        <span class="foco-precio" id="display-precio">$0.00</span>
+        <div class="prob-container"><div id="prob-bar" class="prob-bar"></div></div>
+        <div id="prob-texto" style="font-size: 11px; color: var(--global-accent); font-weight: 900;">FUERZA: 0%</div>
+        <button onclick="guardarFavorito()" style="margin-top:10px; padding:6px 12px; font-size:10px; background:var(--warning); border:none; border-radius:4px; font-weight:bold;">⭐ FAVORITO</button>
+    </div>
+
+    <div class="card">
+        <table class="data-table">
+            <tr id="row-pnl" style="display:none; background: rgba(0,255,204,0.1);">
+                <td style="color: var(--global-accent); font-weight: 900;">PNL EN VIVO</td>
+                <td id="t-pnl" class="val" style="font-size: 18px; color: var(--global-accent);">0.00%</td>
+            </tr>
+            <tr><td>Tendencia MA200</td><td id="t-ma200" class="val">-</td></tr>
+            <tr><td>RSI 14</td><td id="t-rsi" class="val">-</td></tr>
+            <tr><td>EMA 9 (Gatillo)</td><td id="t-ema" class="val">-</td></tr>
+            <tr><td>Estado Vela</td><td id="t-vela" class="val">-</td></tr>
+        </table>
+    </div>
+
+    <div class="card" style="border-left: 5px solid var(--accent)">
+        <div class="config-grid">
+            <div>
+                <label class="config-label">Temporalidad (Trading)</label>
+                <select id="time-entrada" onchange="ejecutarAnalisis()">
+                    <optgroup label="⚡ SCALPING">
+                        <option value="1s">1 SEGUNDO</option>
+                        <option value="1m">1 MINUTO</option>
+                        <option value="3m">3 MINUTOS</option>
+                        <option value="5m">5 MINUTOS</option>
+                    </optgroup>
+                    <optgroup label="🕒 INTRADÍA">
+                        <option value="15m">15 MINUTOS</option>
+                        <option value="30m">30 MINUTOS</option>
+                        <option value="1h">1 HORA</option>
+                        <option value="2h" selected>2 HORAS</option>
+                    </optgroup>
+                    <optgroup label="📅 SWING / POSICIÓN">
+                        <option value="4h">4 HORAS</option>
+                        <option value="6h">6 HORAS</option>
+                        <option value="12h">12 HORAS</option>
+                        <option value="1d">1 DÍA</option>
+                        <option value="3d">3 DÍAS</option>
+                        <option value="1w">1 SEMANA</option>
+                        <option value="1M">1 MES</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label class="config-label">Salida (PNL)</label>
+                <select id="time-salida" onchange="ejecutarAnalisis()">
+                    <option value="1m">1 MINUTO</option><option value="15m">15 MINUTOS</option>
+                    <option value="1h">1 HORA</option><option value="2h" selected>2 HORAS</option>
+                    <option value="4h">4 HORAS</option><option value="1d">1 DÍA</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="config-grid">
+            <div style="grid-column: span 2;">
+                <label class="config-label">Sensibilidad Sniper</label>
+                <select id="rsi-sens" onchange="ejecutarAnalisis()">
+                    <option value="45">AGRESIVO (RSI 45)</option><option value="38" selected>EQUILIBRADO (RSI 38)</option><option value="30">SNIPER (RSI 30)</option>
+                </select>
+            </div>
+        </div>
+
+        <input type="number" id="trade-precio" placeholder="Precio de entrada" oninput="ejecutarAnalisis()">
+        <select id="trade-tipo" onchange="ejecutarAnalisis()" style="margin-top:8px;">
+            <option value="NINGUNA">MODO RADAR</option>
+            <option value="LARGO">DENTRO: LARGO</option>
+            <option value="CORTO">DENTRO: CORTO</option>
+        </select>
+        
+        <div id="veredicto-acierto">---</div>
+        <div id="razonamiento" style="font-size:12px; text-align:center; color:#94a3b8; margin-top:5px;">A la espera de datos...</div>
+
+        <div id="gestion-niveles" class="niveles-box" style="display:none">
+            <div style="text-align:center;"><div class="config-label">STOP LOSS</div><div id="sl-val" style="color:var(--danger); font-weight:bold;">-</div></div>
+            <div style="text-align:center;"><div class="config-label">TAKE PROFIT</div><div id="tp-val" style="color:var(--success); font-weight:bold;">-</div></div>
+        </div>
+        
+        <button class="btn-update" onclick="ejecutarAnalisis()">ACTUALIZAR YA</button>
+
+        <div class="auto-container">
+            <span style="font-size: 11px; font-weight: bold; color: #94a3b8;" id="label-auto">AUTO: OFF</span>
+            <input type="checkbox" id="check-auto" style="width:20px; height:20px;" onchange="toggleAuto()">
+        </div>
+    </div>
+
+    <script>
+        // Registro de Service Worker para APK
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
+
+        let pActualGlobal = 0, ma200Global = 0, rsiGlobal = 0, rsiPrev = 0, ema9Global = 0, simboloActual = "BTCUSDT", vData = null;
+        let timerAuto = null, audioCtx = null, favSignals = {}, trailingSL = 0;
+
+        function desbloquearApp() { 
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (Notification.permission === "default") {
+                    Notification.requestPermission();
+                }
+                document.getElementById('bloqueo-audio').style.display = 'none'; 
+                sonar('operacion'); 
+            }
+        }
+
+        function notify(tit, msg) { if (Notification.permission === "granted") new Notification(tit, { body: msg }); }
+
+        function sonar(tipo) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(tipo === 'operacion' ? 880 : 440, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function calcularRSI(precios) {
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= 14; i++) {
+                let diff = precios[i] - precios[i-1];
+                diff > 0 ? gains += diff : losses -= diff;
+            }
+            let avgG = gains / 14, avgL = losses / 14;
+            for (let i = 15; i < precios.length; i++) {
+                let diff = precios[i] - precios[i-1];
+                avgG = (avgG * 13 + (diff > 0 ? diff : 0)) / 14;
+                avgL = (avgL * 13 + (diff < 0 ? -diff : 0)) / 14;
+            }
+            return 100 - (100 / (1 + (avgG / (avgL || 1))));
+        }
+
+        function calcularEMA(precios, p = 9) {
+            const k = 2 / (p + 1); let ema = precios[0];
+            for (let i = 1; i < precios.length; i++) ema = (precios[i] * k) + (ema * (1 - k));
+            return ema;
+        }
+
+        async function cambiarActivo() {
+            let val = document.getElementById("searchCripto").value.toUpperCase().trim();
+            if (val === "ORO") val = "PAXGUSDT";
+            if (val && !val.endsWith("USDT") && val !== "PAXGUSDT") val += "USDT";
+            if (val) { simboloActual = val; trailingSL = 0; ejecutarAnalisis(); }
+        }
+
+        async function ejecutarAnalisis() {
+            if (!simboloActual) return;
+            const pos = document.getElementById("trade-tipo").value;
+            const tf = (pos === "NINGUNA") ? document.getElementById("time-entrada").value : document.getElementById("time-salida").value;
+            try {
+                let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${simboloActual}&interval=${tf}&limit=250`);
+                let d = await r.json(); let c = d.map(x => parseFloat(x[4]));
+                pActualGlobal = c[c.length - 1];
+                ma200Global = c.slice(-200).reduce((a, b) => a + b, 0) / 200;
+                rsiGlobal = calcularRSI(c); rsiPrev = calcularRSI(c.slice(0, -1));
+                ema9Global = calcularEMA(c);
+                vData = { alcista: pActualGlobal > parseFloat(d[d.length-1][1]), tf: tf };
+                actualizarUI();
+                escanearFavoritos();
+            } catch (e) { console.error(e); }
+        }
+
+        function actualizarUI() {
+            const pos = document.getElementById("trade-tipo").value;
+            const rsiLimit = parseInt(document.getElementById("rsi-sens").value);
+            const tendAlcista = pActualGlobal > ma200Global;
+            const razon = document.getElementById("razonamiento");
+
+            document.getElementById("display-nombre").innerText = simboloActual;
+            document.getElementById("display-precio").innerText = "$" + pActualGlobal.toLocaleString();
+            document.getElementById("t-ma200").innerText = tendAlcista ? "ALCISTA ↑" : "BAJISTA ↓";
+            document.getElementById("t-ma200").style.color = tendAlcista ? "var(--success)" : "var(--danger)";
+            document.getElementById("t-rsi").innerText = rsiGlobal.toFixed(2);
+            document.getElementById("t-ema").innerText = ema9Global.toFixed(4);
+            document.getElementById("t-vela").innerText = `${vData.tf} (${vData.alcista?'ALCISTA':'BAJISTA'})`;
+
+            if (pos === "NINGUNA") {
+                document.getElementById("row-pnl").style.display = "none";
+                document.getElementById("gestion-niveles").style.display = "none";
+                let f = 0;
+                if (tendAlcista) f += 33;
+                if (tendAlcista ? (rsiGlobal <= rsiLimit) : (rsiGlobal >= (100 - rsiLimit))) f += 33;
+                if (tendAlcista ? (pActualGlobal > ema9Global) : (pActualGlobal < ema9Global)) f += 34;
+                document.getElementById("prob-bar").style.width = f + "%";
+                document.getElementById("prob-texto").innerText = `FUERZA: ${f}%`;
+                
+                if (f >= 90) {
+                    document.getElementById("consejo").innerText = tendAlcista ? "¡ENTRADA LARGO!" : "¡ENTRADA CORTO!";
+                    document.getElementById("consejo").className = "advice-box " + (tendAlcista ? "bg-largo" : "bg-corto");
+                    document.getElementById("veredicto-acierto").innerText = "GATILLO ACTIVADO";
+                    notify("SEÑAL", `${simboloActual} en zona de entrada`);
+                } else {
+                    document.getElementById("consejo").innerText = "MODO RADAR";
+                    document.getElementById("consejo").className = "advice-box bg-espera";
+                    document.getElementById("veredicto-acierto").innerText = "ESCANEANDO";
+                }
+                razon.innerText = "Buscando confirmación en " + vData.tf;
+            } else {
+                document.getElementById("row-pnl").style.display = "table-row";
+                document.getElementById("gestion-niveles").style.display = "grid";
+                let ent = parseFloat(document.getElementById("trade-precio").value) || pActualGlobal;
+                let pnl = (pos === "LARGO") ? ((pActualGlobal - ent) / ent) * 100 : ((ent - pActualGlobal) / ent) * 100;
+                document.getElementById("t-pnl").innerText = (pnl >= 0 ? "+" : "") + pnl.toFixed(2) + "%";
+                document.getElementById("t-pnl").style.color = pnl >= 0 ? "var(--success)" : "var(--danger)";
+
+                const esCoherente = (pos === "LARGO" && tendAlcista) || (pos === "CORTO" && !tendAlcista);
+                razon.innerText = esCoherente ? "✅ POSICIÓN SEGURA" : "⚠️ CUIDADO: CONTRA TENDENCIA";
+                razon.style.color = esCoherente ? "var(--success)" : "var(--danger)";
+
+                if (pos === "LARGO") {
+                    let sl = Math.max(ent * 0.985, trailingSL);
+                    if (pnl > 1.2) trailingSL = pActualGlobal * 0.99;
+                    document.getElementById("sl-val").innerText = sl.toFixed(2);
+                    document.getElementById("tp-val").innerText = (ent * 1.04).toFixed(2);
+                } else {
+                    let sl = trailingSL === 0 ? ent * 1.015 : Math.min(ent * 1.015, trailingSL);
+                    if (pnl > 1.2) trailingSL = pActualGlobal * 1.01;
+                    document.getElementById("sl-val").innerText = sl.toFixed(2);
+                    document.getElementById("tp-val").innerText = (ent * 0.96).toFixed(2);
+                }
+            }
+        }
+
+        async function escanearFavoritos() {
+            const favs = JSON.parse(localStorage.getItem("m_favs")) || [];
+            for (let s of favs) {
+                if (s === simboloActual) continue;
+                try {
+                    let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${s}&interval=1h&limit=50`);
+                    let d = await r.json(); let c = d.map(x => parseFloat(x[4]));
+                    let rsi = calcularRSI(c);
+                    let sig = rsi < 30 ? "buy" : rsi > 70 ? "sell" : "none";
+                    if (sig !== "none" && favSignals[s] !== sig) { sonar('operacion'); notify(`Alerta en ${s}`, `RSI extremo detectado`); }
+                    favSignals[s] = sig;
+                    const el = document.querySelector(`[data-symbol="${s}"]`);
+                    if (el) el.className = "fav-item " + (sig === 'buy' ? 'signal-buy' : sig === 'sell' ? 'signal-sell' : '');
+                } catch (e) {}
+            }
+        }
+
+        function cargarFavoritos() {
+            const f = JSON.parse(localStorage.getItem("m_favs")) || ["BTCUSDT", "ETHUSDT"];
+            const cont = document.getElementById("lista-favs"); cont.innerHTML = "";
+            f.forEach(s => {
+                const item = document.createElement("div"); item.className = "fav-item"; item.setAttribute('data-symbol', s);
+                item.innerHTML = `<span class="fav-text" onclick="cargarSimbolo('${s}')">${s}</span><span class="fav-del" onclick="borrarFavorito('${s}')">×</span>`;
+                cont.appendChild(item);
+            });
+        }
+        function guardarFavorito() { let f = JSON.parse(localStorage.getItem("m_favs")) || []; if (!f.includes(simboloActual)) { f.push(simboloActual); localStorage.setItem("m_favs", JSON.stringify(f)); cargarFavoritos(); } }
+        function borrarFavorito(s) { let f = JSON.parse(localStorage.getItem("m_favs")) || []; f = f.filter(x => x !== s); localStorage.setItem("m_favs", JSON.stringify(f)); cargarFavoritos(); }
+        function cargarSimbolo(s) { simboloActual = s; trailingSL = 0; ejecutarAnalisis(); }
+        function toggleAuto() {
+            const chk = document.getElementById("check-auto"), lbl = document.getElementById("label-auto"), dot = document.getElementById("dot");
+            if (chk.checked) { lbl.innerText = "AUTO: ON"; lbl.style.color = "var(--success)"; dot.style.display = "block"; timerAuto = setInterval(ejecutarAnalisis, 10000); }
+            else { lbl.innerText = "AUTO: OFF"; lbl.style.color = "#94a3b8"; dot.style.display = "none"; clearInterval(timerAuto); }
+        }
+        window.onload = () => { cargarFavoritos(); ejecutarAnalisis(); document.getElementById("check-auto").checked = true; toggleAuto(); };
+    </script></body></html>
